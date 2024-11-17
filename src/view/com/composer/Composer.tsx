@@ -166,6 +166,7 @@ export const ComposePost = ({
 
   const [isKeyboardVisible] = useIsKeyboardVisible({iosUseWillEvents: true})
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isTipping, setIsTipping] = useState(false)
   const [publishingStage, setPublishingStage] = useState('')
   const [error, setError] = useState('')
 
@@ -582,17 +583,132 @@ export const ComposePost = ({
   )
 
   const isWebFooterSticky = !isNative && thread.posts.length > 1
+
+  if (isTipping === true) {
+    return (
+      <BottomSheetPortalProvider>
+        <VerifyEmailDialog
+          control={emailVerificationControl}
+          onCloseWithoutVerifying={() => {
+            onClose()
+          }}
+          reasonText={_(
+            msg`Before creating a post, you must first verify your email.`,
+          )}
+        />
+        <KeyboardAvoidingView
+          testID="composePostView"
+          behavior={isIOS ? 'padding' : 'height'}
+          keyboardVerticalOffset={keyboardVerticalOffset}
+          style={a.flex_1}>
+          <View
+            style={[a.flex_1, viewStyles]}
+            aria-modal
+            accessibilityViewIsModal>
+            <ComposerTopBar
+              canPost={false}
+              isReply={!!replyTo}
+              isPublishQueued={publishOnUpload}
+              isPublishing={isPublishing}
+              isThread={thread.posts.length > 1}
+              publishingStage={publishingStage}
+              topBarAnimatedStyle={topBarAnimatedStyle}
+              onCancel={onPressCancel}
+              onPublish={onPressPublish}>
+              {missingAltError && <AltTextReminder error={missingAltError} />}
+              <ErrorBanner
+                error={error}
+                videoState={erroredVideo}
+                clearError={() => setError('')}
+                clearVideo={
+                  erroredVideoPostId
+                    ? () => clearVideo(erroredVideoPostId)
+                    : () => {}
+                }
+              />
+            </ComposerTopBar>
+
+            <Animated.ScrollView
+              ref={scrollViewRef}
+              layout={native(LinearTransition)}
+              onScroll={scrollHandler}
+              style={styles.scrollView}
+              keyboardShouldPersistTaps="always"
+              onContentSizeChange={onScrollViewContentSizeChange}
+              onLayout={onScrollViewLayout}>
+              <View
+                style={[
+                  styles.post,
+                  a.align_center,
+                  a.justify_center,
+                  a.mb_3xl,
+                ]}>
+                <Text type="title" style={[a.mb_lg]}>
+                  Leave a Tip?
+                </Text>
+                <View style={[a.flex_col, a.gap_lg, a.align_center, a.w_full]}>
+                  <View style={[a.flex_row, a.gap_sm]}>
+                    <Button
+                      label="tip-15"
+                      variant="solid"
+                      color="primary"
+                      size="large"
+                      onPress={onPressPublish}
+                      disabled={isPublishing}
+                      style={[a.p_2xl]}>
+                      <ButtonText>15%</ButtonText>
+                    </Button>
+                    <Button
+                      label="tip-20"
+                      variant="solid"
+                      color="primary"
+                      size="large"
+                      onPress={onPressPublish}
+                      disabled={isPublishing}
+                      style={[a.p_2xl]}>
+                      <ButtonText>20%</ButtonText>
+                    </Button>
+                    <Button
+                      label="tip-25"
+                      variant="solid"
+                      color="primary"
+                      size="large"
+                      onPress={onPressPublish}
+                      disabled={isPublishing}
+                      style={[a.p_2xl]}>
+                      <ButtonText>25%</ButtonText>
+                    </Button>
+                  </View>
+                  <Button
+                    label="no-tip"
+                    variant="outline"
+                    color="primary"
+                    shape="square"
+                    size="large"
+                    style={[a.w_full]}
+                    onPress={onPressPublish}
+                    disabled={isPublishing}>
+                    <ButtonText>No Tip</ButtonText>
+                  </Button>
+                </View>
+              </View>
+            </Animated.ScrollView>
+          </View>
+          <Prompt.Basic
+            control={discardPromptControl}
+            title={_(msg`Discard draft?`)}
+            description={_(msg`Are you sure you'd like to discard this draft?`)}
+            onConfirm={onClose}
+            confirmButtonCta={_(msg`Discard`)}
+            confirmButtonColor="negative"
+          />
+        </KeyboardAvoidingView>
+      </BottomSheetPortalProvider>
+    )
+  }
+
   return (
     <BottomSheetPortalProvider>
-      <VerifyEmailDialog
-        control={emailVerificationControl}
-        onCloseWithoutVerifying={() => {
-          onClose()
-        }}
-        reasonText={_(
-          msg`Before creating a post, you must first verify your email.`,
-        )}
-      />
       <KeyboardAvoidingView
         testID="composePostView"
         behavior={isIOS ? 'padding' : 'height'}
@@ -611,7 +727,7 @@ export const ComposePost = ({
             publishingStage={publishingStage}
             topBarAnimatedStyle={topBarAnimatedStyle}
             onCancel={onPressCancel}
-            onPublish={onPressPublish}>
+            onPublish={() => setIsTipping(true)}>
             {missingAltError && <AltTextReminder error={missingAltError} />}
             <ErrorBanner
               error={error}
